@@ -6,12 +6,19 @@
 QFile romFile;
 QByteArray romHex;
 quint8 romType;
-bool romOpened;
+quint32 romSongTableOffset;
+quint32 romSongTableSize;
 
-quint32 songTableOffset;
-quint32 songTableSize;
+QString pretPath;
+quint16 pretSongTableSize;
+quint16 pretvgTableSize;
+quint16 pretKsTableSize;
+QString pretVersion;
 
+QString OUTPUT_DIRECTORY;
 quint16 minSong;
 quint16 maxSong;
-bool generateSongNames;
-bool override;
+bool romReady;
+bool pretReady;
+bool automaticSongNames = true;
+bool overridePret = false;

@@ -3,6 +3,7 @@
 
 #include <QByteArray>
 #include "include/globals.h"
+#include "include/mainwindow.h"
 
 #define SONG_TABLE_PADDING  8
 #define SONG_MS_OFFSET 4
@@ -14,19 +15,10 @@
 #define REVERB_MASK 0x7F
 #define STD_REVERB  50
 
-
 enum {INSTRUMENT_NORMAL, INSTRUMENT_ALT, INSTRUMENT_NO_RESAMPLE};
 
-
-void InitROMData();
-void DecompileSongData(quint16 min, quint16 max);
+void InitROMData(bool unkownRom);
+void ExtractROMSongData(quint16 min, quint16 max, MainWindow* mw);
 void BuildSongFiles();
-
-
-
-
-
-
-//void AddTextToFile(QString file, QString content, bool blankLine);
 
 #endif // GBA_MUSIC_UTILS_H

@@ -22,17 +22,21 @@ SOURCES += \
     src/gba_music_utils.cpp \
     src/globals.cpp \
     src/main.cpp \
-    src/mainwindow.cpp
+    src/mainwindow.cpp \
+    src/pret_utils.cpp
 
 HEADERS += \
     include/aif2pcm/aif2pcm.h \
     include/binary_utils.h \
     include/gba_music_utils.h \
     include/globals.h \
-    include/mainwindow.h \
+    include/mainwindow.h \ \
+    include/pret_utils.h
 
 FORMS += \
     gui/mainwindow.ui \
+
+RC_ICONS = media/icon_128.ico
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

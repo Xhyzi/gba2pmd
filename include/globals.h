@@ -2,12 +2,31 @@
 #define GLOBALS_H
 
 #include <QtGlobal>
+#include <QString>
 
 QT_BEGIN_NAMESPACE
 class QFile;
 class QStringList;
 QT_END_NAMESPACE
 
+const QString SOUND_DIR = "/sound";
+const QString CONSTANTS_DIR = "/include/constants";
+const QString PW_SAMPLE_DIR = "sound/programmable_wave_samples";
+const QString DS_SAMPLE_DIR = "sound/direct_sound_samples";
+const QString MIDI_DIR = "sound/songs/midi";
+
+const QString PWS_EXTENSION = ".pcm";
+const QString BIN_EXTENSION = ".bin";
+
+const QString PWAVE_DATA_FILE = "/sound/programmable_wave_data.inc";
+const QString DSOUND_DATA_FILE = "/sound/direct_sound_data.inc";
+const QString SONG_MK_FILE = "/songs.mk";
+const QString LD_SCRIPT_FILE = "/ld_script.txt";
+const QString KEYSPLIT_FILE = "/sound/keysplit_tables.inc";
+const QString VOICE_GROUP_FILE = "/sound/voice_groups.inc";
+const QString SONG_TABLE_FILE = "/sound/song_table.inc";
+
+const QString DEFAULT_VG_ENTRY = "\tvoice_square_1 255, 255, 255, 255, 255, 255";
 
 struct Song {
     quint16 id;
@@ -74,12 +93,6 @@ struct VoiceKeysplit {
     quint32 keysplit;
 };
 
-//TODO:Get from GUI
-#define TEMP_LASTS_SONG 609
-#define TEMP_LAST_VG 190
-#define TEMP_LAST_KEYSPLIT 5
-
-
 #define DIRECT_SOUND        0x00
 #define DIRECT_SOUND_NO_R   0x08
 #define DIRECT_SOUND_ALT    0x10
@@ -99,13 +112,21 @@ struct VoiceKeysplit {
 extern QFile romFile;
 extern QByteArray romHex;
 extern quint8 romType;
-extern bool romOpened;
+extern quint32 romSongTableOffset;
+extern quint32 romSongTableSize;
 
-extern quint32 songTableOffset;
-extern quint32 songTableSize;
+extern QString pretPath;
+extern quint16 pretSongTableSize;
+extern quint16 pretvgTableSize;
+extern quint16 pretKsTableSize;
+extern QString pretVersion;
 
+extern QString OUTPUT_DIRECTORY;
 extern quint16 minSong;
 extern quint16 maxSong;
-
+extern bool romReady;
+extern bool pretReady;
+extern bool automaticSongNames;
+extern bool overridePret;
 
 #endif // GLOBALS_H

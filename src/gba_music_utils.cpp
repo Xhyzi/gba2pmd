@@ -2,13 +2,13 @@
 #include "include/gba_music_utils.h"
 #include "include/binary_utils.h"
 #include "include/globals.h"
-#include <QDebug>
+#include <QTextStream>
 #include <QList>
 #include <QDir>
 
 /** Data Init **/
-static void InitSongTableOffset();
-static void InitSongTableEntries();
+static void InitROMSongTableOffset();
+static void InitROMSongTableEntries();
 /** Parsers **/ //Parse music related data
 static void ParseSong(quint16 pos);
 static void ParseSongHeader(Song song);
@@ -17,14 +17,13 @@ static QString ParseVGEntry(quint32 vgeOffset);
 static QString ParseDirectSound(Instrument ins, quint8 mode);
 static QString ParseVoiceSquare_1(Instrument ins, quint8 mode);
 static QString ParseReadVoiceSquare_2(Instrument ins, quint8 mode);
-static QString ParseProgramableWave(Instrument ins, quint8 mode);
+static QString ParseProgrammableWave(Instrument ins, quint8 mode);
 static QString ParseVoiceNoise(Instrument ins, quint8 mode);
 static QString ParseKeysplit(Instrument ins, quint8 mode);
 static void ParseSplit(quint32 offset);
 /** Create File Entries **/
 static void CreateSongTableEntry(struct Song song);
 static void CreateSongConstantEntry(struct Song song);
-static void CreateCharmapEntry(struct Song song);
 static QString CreateDirectSoundEntry(DirectSound ds, quint8 mode);
 static QString CreateSquareSound1Entry(SquareSound ss, quint8 mode);
 static QString CreateSquareSound2Entry(SquareSound ss, quint8 mode);
@@ -35,8 +34,6 @@ static void CreateSongMKEntry(struct Song song, struct SongHeader header);
 /** Build Files **/ //Build the different music related files
 static void BuildSongTableFile();
 static void BuildSongConstantsFile();
-static void BuildCharmapFiles();
-static void BuildCharmapFile(QString dir);
 static void BuildVoiceGroupsFile();
 static void BuildKeySplitFile();
 static void BuildDirectSoundDataFile();
@@ -50,74 +47,65 @@ static void BuildPcmSampleFile(quint32 pcm);
 /** Utils **/
 static void CreatePaths();
 static void CreatePath(QString path);
-static void AddTextToFile(QString file, QString content, bool blankLine);
+static void RenameKeysplitSVGPointers();
+static void RenameKeysplitPointers();
 
 static QStringList songTable_list;             //sound/song_table.inc
 static QStringList songConstants_list;         //include/constants/songs.h
-static QStringList charmaps_list;              //charmap.txt berry_fix/charmap.txt berry_fix/payload/charmap.txt
 static QMap<quint32, QStringList> voiceGroups_map; //sound/voice_groups.inc
 static QMap<quint32, QStringList> keySplit_map;    //sound/keysplit_tables.inc
 static QList<quint32> sample_list;                 //sound/direct_sound_samples/XXX.aif
 static QList<quint32> pwSample_list;               //sound/programmable_wave_samples/XXX.pcm
 static QMap<quint32, quint16> vgIds_map;       //Contains id's of each map
+static QMap<quint32, quint16> ksplitIds_map;
 static QStringList songMK_list;                //songs.mk
 static QStringList ld_scripts_list;    //@song_data ld_script.txt
 
-
-const QString OUTPUT_DIRECTORY = "C:/test"; //TODO:Eliminar, obtener de la GUI
-
-static const QString SOUND_DIR = "/sound";
-static const QString CONSTANTS_DIR = "/include/constants";
-static const QString BERRY_FIX_DIR = "/berry_fix";
-static const QString PAYLOAD_DIR = "/berry_fix/payload";
-static const QString PW_SAMPLE_DIR = "sound/programmable_wave_samples";
-static const QString DS_SAMPLE_DIR = "sound/direct_sound_samples";
-static const QString MIDI_DIR = "sound/songs/midi";
-
-static const QString PWS_EXTENSION = ".pcm";
-static const QString BIN_EXTENSION = ".bin";
-
-static const QString PWAVE_DATA_FILE = "/sound/programmable_wave_data.inc";
-static const QString DSOUND_DATA_FILE = "/sound/direct_sound_data.inc";
-static const QString SONG_MK_FILE = "/songs.mk";
-static const QString LD_SCRIPT_FILE = "/ld_script.txt";
-static const QString KEYSPLIT_FILE = "/sound/keysplit_tables.inc";
-static const QString VOICE_GROUP_FILE = "/sound/voice_groups.inc";
-static const QString CHARMAP_FILE = "charmap.txt";
-static const QString SONG_TABLE_FILE = "/sound/song_table.inc";
-
 //Initialize ROM Data
-void InitROMData()
+void InitROMData(bool unkownRom)
 {
-    InitSongTableOffset();
-    InitSongTableEntries();
+    if(!unkownRom)
+        InitROMSongTableOffset();
+    InitROMSongTableEntries();
 }
 
 //Search song's table
-static void InitSongTableOffset()
+static void InitROMSongTableOffset()
 {
-    songTableOffset = ResolveROMHexPointer(ROM_SONG_TABLE_POINTERS[romType]);
+    romSongTableOffset = ResolveROMHexPointer(ROM_SONG_TABLE_POINTERS[romType]);
 }
 
 //Initialize the ammount of song entries in the song table
-static void InitSongTableEntries()
+static void InitROMSongTableEntries()
 {
-    songTableSize = -1;
+    romSongTableSize = -1;
 
-    for(int i=0;; i += SONG_TABLE_PADDING, songTableSize++)
-        if (ReadROMWordAt(songTableOffset + i) == 0)
+    for(int i=0;; i += SONG_TABLE_PADDING, romSongTableSize++)
+        if (ReadROMWordAt(romSongTableOffset + i) == 0 || romSongTableSize == 999)
             break;
 }
 
 //Starts extraction of music data from ROM between min and max entries of the song table
-void DecompileSongData(quint16 min, quint16 max)
+void ExtractROMSongData(quint16 min, quint16 max, MainWindow* mw)
 {
-    //TODO: Do this from gui, limiting max tab to songTableSize
-    if (max > songTableSize)
-        max = songTableSize;
+    songTable_list.clear();
+    songConstants_list.clear();
+    voiceGroups_map.clear();
+    keySplit_map.clear();
+    sample_list.clear();
+    pwSample_list.clear();
+    vgIds_map.clear();
+    ksplitIds_map.clear();
+    songMK_list.clear();
+    ld_scripts_list.clear();
 
-    for (int i=0; i<max-min; i++)
-        ParseSong(min + i + 1);
+    quint16 entries = max-min;
+
+    for (int i=0; i<=entries; i++)
+    {
+        ParseSong(min + i);
+        mw->SetPercentage(i * 100 / entries);
+    }
 
     BuildSongFiles();
 }
@@ -130,14 +118,13 @@ static void ParseSong(quint16 pos)
 {
     Song song;
 
-    song.id = TEMP_LASTS_SONG + 1 + songTable_list.size();
-    song.headerPointer = ResolveROMHexPointer(songTableOffset + pos * SONG_TABLE_PADDING);
-    song.ms = ReadROMHWordAt(songTableOffset + pos * SONG_TABLE_PADDING + SONG_MS_OFFSET);
-    song.me = ReadROMHWordAt(songTableOffset + pos * SONG_TABLE_PADDING + SONG_ME_OFFSET);
+    song.id = pretSongTableSize + 1 + songTable_list.size();
+    song.headerPointer = ResolveROMHexPointer(romSongTableOffset + pos * SONG_TABLE_PADDING);
+    song.ms = ReadROMHWordAt(romSongTableOffset + pos * SONG_TABLE_PADDING + SONG_MS_OFFSET);
+    song.me = ReadROMHWordAt(romSongTableOffset + pos * SONG_TABLE_PADDING + SONG_ME_OFFSET);
 
     CreateSongTableEntry(song);
     CreateSongConstantEntry(song);
-    CreateCharmapEntry(song);
 
     ParseSongHeader(song);
 }
@@ -162,15 +149,12 @@ static void ParseVoiceGroup(quint32 vgOffset)
 
     if (!voiceGroups_map.contains(vgOffset))
     {
-        //Adds the id beforehand to avoid infinite looping in case the voicegroup contains itself in a keysplit
+        //Adds the id beforehand to avoid infinite looping
+        //Just in case the voicegroup contains itself in a keysplit
+        vgIds_map.insert(vgOffset, pretvgTableSize + voiceGroups_map.size());
         voiceGroups_map.insert(vgOffset, voiceGroup_list);
-        vgIds_map.insert(vgOffset, TEMP_LAST_VG + voiceGroups_map.size());
         for (int i=0; i<VG_SIZE; i++)
-        {
-            qDebug() << "";
-            qDebug() << "VG Entry " + IntToDecimalQString(i) + " " + IntToHexQString(vgOffset);
             voiceGroups_map[vgOffset].append(ParseVGEntry(vgOffset + VG_ENTRY_LENGTH * i));
-        }
     }
 }
 
@@ -187,75 +171,72 @@ static QString ParseVGEntry(quint32 vgeOffset)
         ins.data[i] = ReadROMByteAt(vgeOffset + i + 1);
     }
 
-    switch (ins.type) {
+    try {
 
-        case DIRECT_SOUND:
-            qDebug() << "Direct_Sound";
-            entry = ParseDirectSound(ins, INSTRUMENT_NORMAL);
-            break;
+        switch (ins.type) {
 
-        case DIRECT_SOUND_NO_R:
-            qDebug() << "Direct_Sound no resample";
-            entry = ParseDirectSound(ins, INSTRUMENT_ALT);
-            break;
+            case DIRECT_SOUND:
+                entry = ParseDirectSound(ins, INSTRUMENT_NORMAL);
+                break;
 
-        case DIRECT_SOUND_ALT:
-            qDebug() << "Direct_Sound_Alt";
-            entry = ParseDirectSound(ins, INSTRUMENT_NO_RESAMPLE);
-            break;
+            case DIRECT_SOUND_NO_R:
+                entry = ParseDirectSound(ins, INSTRUMENT_ALT);
+                break;
 
-        case VOICE_SQUARE_1:
-            qDebug() << "VSquare_1";
-            entry = ParseVoiceSquare_1(ins, INSTRUMENT_NORMAL);
-            break;
+            case DIRECT_SOUND_ALT:
+                entry = ParseDirectSound(ins, INSTRUMENT_NO_RESAMPLE);
+                break;
 
-        case VOICE_SQUARE_1_ALT:
-            qDebug() << "VSquare_1_Alt";
-            entry = ParseVoiceSquare_1(ins, INSTRUMENT_ALT);
-            break;
+            case VOICE_SQUARE_1:
+                entry = ParseVoiceSquare_1(ins, INSTRUMENT_NORMAL);
+                break;
 
-        case VOICE_SQUARE_2:
-            qDebug() << "VSquare_2";
-            entry = ParseReadVoiceSquare_2(ins, INSTRUMENT_NORMAL);
-            break;
+            case VOICE_SQUARE_1_ALT:
+                entry = ParseVoiceSquare_1(ins, INSTRUMENT_ALT);
+                break;
 
-        case VOICE_SQUARE_2_ALT:
-            qDebug() << "VSQuare_2_Alt";
-            entry = ParseReadVoiceSquare_2(ins, INSTRUMENT_ALT);
-            break;
+            case VOICE_SQUARE_2:
+                entry = ParseReadVoiceSquare_2(ins, INSTRUMENT_NORMAL);
+                break;
 
-        case VOICE_PROGRAMABLE_WAVE:
-            qDebug() << "Programable Wave";
-            entry = ParseProgramableWave(ins, INSTRUMENT_NORMAL);
-            break;
+            case VOICE_SQUARE_2_ALT:
+                entry = ParseReadVoiceSquare_2(ins, INSTRUMENT_ALT);
+                break;
 
-        case VOICE_PROGRAMABLE_WAVE_ALT:
-            qDebug() << "Programable_Wave_Alt";
-            entry = ParseProgramableWave(ins, INSTRUMENT_ALT);
-            break;
+            case VOICE_PROGRAMABLE_WAVE:
+                entry = ParseProgrammableWave(ins, INSTRUMENT_NORMAL);
+                break;
 
-        case VOICE_NOISE:
-            qDebug() << "Voice_Noise";
-            entry = ParseVoiceNoise(ins, INSTRUMENT_NORMAL);
-            break;
+            case VOICE_PROGRAMABLE_WAVE_ALT:
+                entry = ParseProgrammableWave(ins, INSTRUMENT_ALT);
+                break;
 
-        case VOICE_NOISE_ALT:
-            qDebug() << "Voice_Noise_alt";
-            entry = ParseVoiceNoise(ins, INSTRUMENT_ALT);
-            break;
+            case VOICE_NOISE:
+                entry = ParseVoiceNoise(ins, INSTRUMENT_NORMAL);
+                break;
 
-        case VOICE_KEYSPLIT:
-            qDebug() << "Voice_Keysplit";
-            entry = ParseKeysplit(ins, INSTRUMENT_NORMAL);
-            break;
+            case VOICE_NOISE_ALT:
+                entry = ParseVoiceNoise(ins, INSTRUMENT_ALT);
+                break;
 
-        case VOICE_KEYSPLIT_ALL:
-            qDebug() << "Voice_Keysplit_Alt";
-            entry = ParseKeysplit(ins, INSTRUMENT_ALT);
-            break;
+            case VOICE_KEYSPLIT:
+                entry = ParseKeysplit(ins, INSTRUMENT_NORMAL);
+                break;
+
+            case VOICE_KEYSPLIT_ALL:
+                entry = ParseKeysplit(ins, INSTRUMENT_ALT);
+                break;
+
+            default:
+                QString msg = "Unkown voice entry type: " + IntToDecimalQString(ins.type);
+                throw msg;
+        }
+
+        return entry;
+
+    } catch(QString msg) {
+        return DEFAULT_VG_ENTRY + " \t\t@PLACEHOLDER: " + msg;
     }
-
-    return entry;
 }
 
 //Parses a DirectSound entry
@@ -263,18 +244,35 @@ static QString ParseDirectSound(Instrument ins, quint8 mode)
 {
     DirectSound dsound;
 
+    dsound.sample = ((ins.data[6] << 24) + (ins.data[5] << 16) + (ins.data[4] << 8) + ins.data[3]); //& BINARY_POINTER_MASK;
+
+    if (dsound.sample < 0x8000000 || dsound.sample > 0x9FFFFFF)
+    {
+        QString msg = "Bad sample pointer \"" + IntToHexQString(dsound.sample) + "\"";
+        throw msg;
+    }
+
     dsound.note = ins.data[0];
     dsound.pan = ins.data[2];
-    dsound.sample = (ins.data[5] << 16) + (ins.data[4] << 8) + ins.data[3];
+    dsound.sample &= BINARY_POINTER_MASK;
     dsound.atk = ins.data[7];
     dsound.dec = ins.data[8];
     dsound.sus = ins.data[9];
     dsound.rel = ins.data[10];
 
+    if ((ReadROMHWordAt(dsound.sample) != 0)
+            || (ReadROMHWordAt(dsound.sample + 0xE) != 0)
+            || (ReadROMWordAt(dsound.sample + 0xA) & 0xFFFFFF00) == 0
+            || (ReadROMWordAt(dsound.sample + 0x3) & 0xFFFFFF00) == 0)
+    {
+        QString msg = "Bad sample file \"" + IntToHexQString(dsound.sample) + "\"";
+        throw msg;
+    }
+
     if (!sample_list.contains(dsound.sample))
     {
-        sample_list.append(dsound.sample);
         BuildTempSampleBinary(dsound.sample);
+        sample_list.append(dsound.sample);
     }
     return CreateDirectSoundEntry(dsound, mode);
 }
@@ -309,11 +307,18 @@ static QString ParseReadVoiceSquare_2(Instrument ins, quint8 mode)
 }
 
 //Parses a ProgramableWave entry
-static QString ParseProgramableWave(Instrument ins, quint8 mode)
+static QString ParseProgrammableWave(Instrument ins, quint8 mode)
 {
     ProgramableWave pwave;
 
-    pwave.data = (ins.data[5] << 16) + (ins.data[4] << 8) + ins.data[3];
+    pwave.data = (ins.data[6] << 24) + (ins.data[5] << 16) + (ins.data[4] << 8) + ins.data[3];
+    if (pwave.data < 0x8000000 || pwave.data > 0x9FFFFFF)
+    {
+        QString msg = "Bad programmable Wave pointer \"" + IntToHexQString(pwave.data) + "\"";
+        throw msg;
+    }
+
+    pwave.data &= BINARY_POINTER_MASK;
     pwave.atk = ins.data[7];
     pwave.dec = ins.data[8];
     pwave.sus = ins.data[9];
@@ -347,13 +352,24 @@ static QString ParseKeysplit(Instrument ins, quint8 mode)
 {
     VoiceKeysplit vksplit;
 
-    vksplit.svg = (ins.data[5] << 0x10) + (ins.data[4] << 0x8) + ins.data[3];
+    vksplit.svg = ((ins.data[6] << 24) + (ins.data[5] << 0x10) + (ins.data[4] << 0x8) + ins.data[3]);
+
+    if (vksplit.svg < 0x8000000 || vksplit.svg > 0x9FFFFFF)
+    {
+        QString msg = "Bad voiceGroup pointer \"" + IntToHexQString(vksplit.svg) + "\"";
+        throw msg;
+    }
+
+    vksplit.svg &= BINARY_POINTER_MASK;
 
     if (mode == INSTRUMENT_NORMAL)
     {
-        vksplit.keysplit = (ins.data[9] << 0x10) + (ins.data[8] << 0x8) + ins.data[7];
+        vksplit.keysplit = ((ins.data[10] << 0x18) + (ins.data[9] << 0x10) + (ins.data[8] << 0x8) + ins.data[7]) & BINARY_POINTER_MASK;
         if (!keySplit_map.contains(vksplit.keysplit))
+        {
             ParseSplit(vksplit.keysplit);
+            ksplitIds_map.insert(vksplit.keysplit, pretKsTableSize + keySplit_map.size());
+        }
     }
 
     ParseVoiceGroup(vksplit.svg);
@@ -407,14 +423,9 @@ static void CreateSongTableEntry(struct Song song)
 
 static void CreateSongConstantEntry(struct Song song)
 {
-    QString entry = "#define MUS_" + IntToDecimalQString(song.id);
+    QString entry = "#define MUS_" + IntToDecimalQString(song.id) +
+            " " + IntToDecimalQString(song.id);
     songConstants_list.append(entry);
-}
-
-static void CreateCharmapEntry(struct Song song)
-{
-    QString entry = "MUS_" + IntToDecimalQString(song.id) + " = " + HWordToPermutedString(song.id);
-    charmaps_list.append(entry);
 }
 
 static QString CreateDirectSoundEntry(DirectSound ds, quint8 mode)
@@ -438,7 +449,7 @@ static QString CreateDirectSoundEntry(DirectSound ds, quint8 mode)
 
     entry += IntToDecimalQString(ds.note) + ", " +
             IntToDecimalQString(ds.pan) + ", " +
-            IntToHexQString(ds.sample) + ", " +
+            "DirectSoundWaveData_" + IntToHexQString(ds.sample) + ", " +
             IntToDecimalQString(ds.atk) + ", " +
             IntToDecimalQString(ds.dec) + ", " +
             IntToDecimalQString(ds.sus) + ", " +
@@ -493,7 +504,7 @@ static QString CreateProgramableWaveEntry(ProgramableWave pw, quint8 mode)
     else
         entry += "\tvoice_programmable_wave_alt ";
 
-    entry += IntToHexQString(pw.data) + ", " +
+    entry += "ProgrammableWaveData_" + IntToHexQString(pw.data) + ", " +
             IntToDecimalQString(pw.atk) + ", " +
             IntToDecimalQString(pw.dec) + ", " +
             IntToDecimalQString(pw.sus) + ", " +
@@ -525,11 +536,11 @@ static QString CreateVoiceKeysplit(VoiceKeysplit vk, quint8 mode)
     QString entry="";
 
     if (mode == INSTRUMENT_NORMAL)
-        entry += "\tvoice_keysplit " +
-                IntToHexQString(vk.svg) + ", " +
+        entry += "\tvoice_keysplit svg_" +
+                IntToHexQString(vk.svg) + ", ksplit_" +
                 IntToHexQString(vk.keysplit);
     else    //keysplit_all
-        entry += "\tvoice_keysplit_all " +
+        entry += "\tvoice_keysplit_all svg_" +
                 IntToHexQString(vk.svg);
 
     return entry;
@@ -570,10 +581,11 @@ static void CreateSongMKEntry(struct Song song, struct SongHeader header)
  * ****************************** */
 void BuildSongFiles()
 {
+    RenameKeysplitSVGPointers();
+    RenameKeysplitPointers();
     CreatePaths();
     BuildSongTableFile();
     BuildSongConstantsFile();
-    BuildCharmapFiles();
     BuildVoiceGroupsFile();
     BuildKeySplitFile();
     BuildDirectSoundDataFile();
@@ -617,31 +629,6 @@ static void BuildSongConstantsFile()
     }
 }
 
-static void BuildCharmapFiles()
-{
-    BuildCharmapFile("");
-    BuildCharmapFile(BERRY_FIX_DIR);
-    BuildCharmapFile(PAYLOAD_DIR);
-}
-
-static void BuildCharmapFile(QString dir)
-{
-    QFile f (OUTPUT_DIRECTORY + dir + CHARMAP_FILE);
-
-    if (f.open(QIODevice::ReadWrite))
-    {
-        QTextStream out(&f);
-
-        for (int i=0; i<charmaps_list.size(); i++)
-        {
-            out << charmaps_list[i]+"\n";
-        }
-        out.flush();
-        f.close();
-        qDebug() << "charmap.txt Created!!";
-    }
-}
-
 static void BuildVoiceGroupsFile()
 {
     QStringList vg;
@@ -653,7 +640,7 @@ static void BuildVoiceGroupsFile()
         QTextStream out(&f);
         QMapIterator<quint32, QStringList> i(voiceGroups_map);
 
-        for (int vg_id=TEMP_LAST_VG + 1; i.hasNext(); vg_id++)
+        for (int vg_id=pretvgTableSize; i.hasNext(); vg_id++)
         {
             i.next();
             vg = i.value();
@@ -681,7 +668,7 @@ static void BuildKeySplitFile()
         QTextStream out(&f);
         QMapIterator<quint32, QStringList> i(keySplit_map);
 
-        for (int ks_id = TEMP_LAST_KEYSPLIT + 1; i.hasNext(); ks_id++)
+        for (int ks_id = pretKsTableSize + 1; i.hasNext(); ks_id++)
         {
             i.next();
             ks = i.value();
@@ -709,7 +696,7 @@ static void BuildLd_ScriptFile()
         for(int i=0; i<songTable_list.size(); i++)
         {
             out << "\n\t\t" + MIDI_DIR + "/mus_" +
-                   IntToDecimalQString(TEMP_LASTS_SONG + i +1)+ ".o(.rodata);";
+                   IntToDecimalQString(pretSongTableSize + i +1)+ ".o(.rodata);";
         }
         out.flush();
     }
@@ -776,7 +763,6 @@ static void BuildProgrammableWaveDataFile()
     }
 }
 
-//TODO: Erase temp files
 static void BuildTempSampleBinary(quint32 sample)
 {
     quint32 sampleLenght;
@@ -791,10 +777,7 @@ static void BuildTempSampleBinary(quint32 sample)
         sampleLenght = ReadROMHWordAt(sample + SAMPLE_LENGTH_OFFSET);   //Change by C
 
         for (quint32 i=0; i<(sampleLenght+SAMPLE_HEADER_LENGTH); i++)
-        {
-
             out << ReadROMByteAt(sample + i);
-        }
         f.close();
     }
     BuildAifSampleFile(path);
@@ -817,7 +800,7 @@ static void DeleteTempBinarySampleFiles()
 
     for (int i=0; i<sample_list.size(); i++)
     {
-        path = OUTPUT_DIRECTORY + DS_SAMPLE_DIR + "/" +
+        path = OUTPUT_DIRECTORY + "/" + DS_SAMPLE_DIR + "/" +
                 IntToHexQString(sample_list[i]) + BIN_EXTENSION;
         QFile f(path);
         f.remove();
@@ -848,8 +831,6 @@ static void CreatePaths()
 {
     CreatePath(OUTPUT_DIRECTORY + SOUND_DIR);
     CreatePath(OUTPUT_DIRECTORY + CONSTANTS_DIR);
-    CreatePath(OUTPUT_DIRECTORY + BERRY_FIX_DIR);
-    CreatePath(OUTPUT_DIRECTORY + PAYLOAD_DIR);
 }
 
 //Creates a path if does not exist
@@ -861,22 +842,52 @@ static void CreatePath(QString path)
         dir.mkpath(path);
 }
 
-static void AddTextToFile(QString file, QString content, bool blankLine)
+static void RenameKeysplitSVGPointers()
 {
-    QString fileName= OUTPUT_DIRECTORY + file;
-    QFile f(fileName);
+    QStringList vg;
+    quint32 offset;
+    quint16 id;
 
-    if (blankLine)
-       content = "\n" + content;
+    QMapIterator<quint32, quint16> i(vgIds_map);
 
-    if (f.open(QIODevice::ReadWrite))
+    while(i.hasNext())
     {
-        QTextStream out(&f);
+        i.next();
+        offset = i.key();
+        id = i.value();
 
-        while(!out.atEnd()) {out.readLine();}
+        QMapIterator<quint32, QStringList> i_vg(voiceGroups_map);
 
-        out << content << endl;
-        out.flush();  //Makes sure to flush buffer  before closing QString->string
+        while(i_vg.hasNext())
+        {
+            i_vg.next();
+            voiceGroups_map[i_vg.key()].replaceInStrings("svg_" + IntToHexQString(offset),
+                                                         "voicegroup" + IntToDecimalQString(id));
+        }
     }
-    f.close();
+}
+
+static void RenameKeysplitPointers()
+{
+    QStringList vg;
+    quint32 offset;
+    quint16 id;
+
+    QMapIterator<quint32, quint16> i(ksplitIds_map);
+
+    while(i.hasNext())
+    {
+        i.next();
+        offset = i.key();
+        id = i.value();
+
+        QMapIterator<quint32, QStringList> i_vg(voiceGroups_map);
+
+        while (i_vg.hasNext())
+        {
+            i_vg.next();
+            voiceGroups_map[i_vg.key()].replaceInStrings("ksplit_" + IntToHexQString(offset),
+                                                         "KeySplitTable" + IntToDecimalQString(id));
+        }
+    }
 }

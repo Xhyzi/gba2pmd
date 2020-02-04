@@ -1,12 +1,8 @@
 #include "include/binary_utils.h"
-#include "include/mainwindow.h"
 #include "include/globals.h"
-#include <QFile>
-#include <QDebug>
-#include <QMessageBox>
 
 //Opens ROM file
-bool OpenRom(QString filePath)
+bool InitROMFile(QString filePath)
 {
     romFile.setFileName(filePath);
 
@@ -16,17 +12,13 @@ bool OpenRom(QString filePath)
         romFile.close();
         return true;
     }
-
     return false;
 }
 
-//TODO: Add more ROM's
 //Checks the loaded ROM version
 bool CheckRomVersion()
 {
     quint32 header = ReadROMWordAt(ROM_HEADER_OFFSET);
-
-    qDebug() << IntToHexQString(header);
 
     for (int i=0; i<(int)sizeof(ROM_HEADERS); i++)
         if (ROM_HEADERS[i] == header)
@@ -118,4 +110,12 @@ QString HWordToPermutedString(quint16 hword)
     return string;
 }
 
-
+bool IsROMFile()
+{
+    if (romFile.size() == (8 << 20) ||
+            romFile.size() == (16 << 20) ||
+            romFile.size() == (32 << 20))
+        return true;
+    else
+        return false;
+}

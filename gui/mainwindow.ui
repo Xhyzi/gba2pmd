@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>480</height>
+    <height>470</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,7 +31,7 @@
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>47</width>
+       <width>65</width>
        <height>14</height>
       </rect>
      </property>
@@ -44,7 +44,7 @@
       <rect>
        <x>10</x>
        <y>40</y>
-       <width>47</width>
+       <width>65</width>
        <height>14</height>
       </rect>
      </property>
@@ -57,7 +57,7 @@
       <rect>
        <x>10</x>
        <y>60</y>
-       <width>61</width>
+       <width>65</width>
        <height>16</height>
       </rect>
      </property>
@@ -70,7 +70,7 @@
       <rect>
        <x>10</x>
        <y>80</y>
-       <width>91</width>
+       <width>65</width>
        <height>16</height>
       </rect>
      </property>
@@ -81,27 +81,27 @@
     <widget class="QLabel" name="label_rversion">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>60</x>
        <y>20</y>
-       <width>271</width>
+       <width>310</width>
        <height>16</height>
       </rect>
      </property>
      <property name="text">
-      <string>AXVE - Pokémon Ruby Eng</string>
+      <string>-</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_rfile">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>40</x>
        <y>40</y>
-       <width>261</width>
+       <width>330</width>
        <height>16</height>
       </rect>
      </property>
      <property name="text">
-      <string>C:/users/unkown/desktop/ROMS/Ruby.gba</string>
+      <string>-</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_rsongTable">
@@ -109,12 +109,12 @@
       <rect>
        <x>80</x>
        <y>60</y>
-       <width>141</width>
+       <width>295</width>
        <height>16</height>
       </rect>
      </property>
      <property name="text">
-      <string>0x86F49D7</string>
+      <string>0x000000</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_rsongNum">
@@ -127,7 +127,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>610</string>
+      <string>0</string>
      </property>
     </widget>
    </widget>
@@ -137,7 +137,7 @@
       <x>10</x>
       <y>180</y>
       <width>380</width>
-      <height>100</height>
+      <height>90</height>
      </rect>
     </property>
     <property name="title">
@@ -148,7 +148,7 @@
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>47</width>
+       <width>65</width>
        <height>14</height>
       </rect>
      </property>
@@ -161,7 +161,7 @@
       <rect>
        <x>10</x>
        <y>40</y>
-       <width>47</width>
+       <width>65</width>
        <height>14</height>
       </rect>
      </property>
@@ -174,7 +174,7 @@
       <rect>
        <x>10</x>
        <y>60</y>
-       <width>61</width>
+       <width>65</width>
        <height>16</height>
       </rect>
      </property>
@@ -185,30 +185,30 @@
     <widget class="QLabel" name="label_pversion">
      <property name="geometry">
       <rect>
-       <x>70</x>
+       <x>60</x>
        <y>20</y>
-       <width>121</width>
+       <width>300</width>
        <height>16</height>
       </rect>
      </property>
      <property name="text">
-      <string>pokeemerald</string>
+      <string>-</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_pfolder">
      <property name="geometry">
       <rect>
-       <x>70</x>
+       <x>55</x>
        <y>40</y>
-       <width>221</width>
+       <width>315</width>
        <height>16</height>
       </rect>
      </property>
      <property name="text">
-      <string>C:/users/unkown/desktop/git/pokeemerald</string>
+      <string>-</string>
      </property>
     </widget>
-    <widget class="QLabel" name="label_plastSong">
+    <widget class="QLabel" name="label_LastSong">
      <property name="geometry">
       <rect>
        <x>70</x>
@@ -218,15 +218,18 @@
       </rect>
      </property>
      <property name="text">
-      <string>629</string>
+      <string>0</string>
      </property>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox_3">
+   <widget class="QGroupBox" name="groupBox_Config">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>290</y>
+      <y>280</y>
       <width>380</width>
       <height>100</height>
      </rect>
@@ -234,7 +237,7 @@
     <property name="title">
      <string>Configuration</string>
     </property>
-    <widget class="QRadioButton" name="radioButton_generate">
+    <widget class="QRadioButton" name="radioButton_AName">
      <property name="geometry">
       <rect>
        <x>190</x>
@@ -244,26 +247,26 @@
       </rect>
      </property>
      <property name="text">
-      <string>Generate song names</string>
+      <string>Name Songs Automatically</string>
      </property>
      <property name="checked">
       <bool>true</bool>
      </property>
     </widget>
-    <widget class="QRadioButton" name="radioButton_Name">
+    <widget class="QRadioButton" name="radioButton_MName">
      <property name="geometry">
       <rect>
        <x>190</x>
        <y>45</y>
-       <width>121</width>
+       <width>150</width>
        <height>18</height>
       </rect>
      </property>
      <property name="text">
-      <string>Manual song names</string>
+      <string>Name Songs Manually</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="checkBox_override">
+    <widget class="QCheckBox" name="checkBox_Override">
      <property name="geometry">
       <rect>
        <x>190</x>
@@ -302,30 +305,24 @@
       <string>First song</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_firstSong">
+    <widget class="QSpinBox" name="spinBox_FirstSong">
      <property name="geometry">
       <rect>
        <x>80</x>
        <y>30</y>
-       <width>71</width>
+       <width>70</width>
        <height>20</height>
       </rect>
      </property>
-     <property name="text">
-      <string>609</string>
-     </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit_LastSong">
+    <widget class="QSpinBox" name="spinBox_LastSong">
      <property name="geometry">
       <rect>
        <x>80</x>
        <y>60</y>
-       <width>71</width>
+       <width>70</width>
        <height>20</height>
       </rect>
-     </property>
-     <property name="text">
-      <string>610</string>
      </property>
     </widget>
    </widget>
@@ -355,11 +352,14 @@
      <string>PRET Folder</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pushButton_Decompile">
+   <widget class="QPushButton" name="pushButton_Extract">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>400</y>
+      <y>390</y>
       <width>125</width>
       <height>35</height>
      </rect>
@@ -375,7 +375,7 @@
     <property name="geometry">
      <rect>
       <x>145</x>
-      <y>405</y>
+      <y>395</y>
       <width>250</width>
       <height>25</height>
      </rect>

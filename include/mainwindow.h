@@ -14,6 +14,24 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+    void SetPercentage(quint8 percentage);
+
+private slots:
+    void on_pushButton_File_clicked();
+
+    void on_pushButton_Folder_clicked();
+
+    void on_pushButton_Extract_clicked();
+
+    void UpdateRomLabels(bool unkown);
+
+    void UpdatePretLabels();
+
+    void on_radioButton_AName_toggled(bool checked);
+
+    void on_checkBox_Override_stateChanged(int arg1);
+
+    void EnableExtract();
 
 private:
     Ui::MainWindow *ui;

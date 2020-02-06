@@ -29,10 +29,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_pushButton_File_clicked()
 {
-    bool unkownROM;
+    bool unkownROM = false;
     QString fPath = QFileDialog::getOpenFileName(this, "Select GBA ROM File:",
                                                  QDir::homePath());
-
     if (InitROMFile(fPath))
     {
         romReady = false;
@@ -43,12 +42,13 @@ void MainWindow::on_pushButton_File_clicked()
                                "Selected File is not a ROM");
         }
         else
+        {
             if (!CheckRomVersion())
             {
                 QMessageBox::StandardButton reply = QMessageBox::question(this,
-                                   "Error",
-                                   "Unkown ROM.\nWanna Manually Insert SongTable Offset?",
-                                    QMessageBox::Yes|QMessageBox::No);
+                                                            "Error",
+                                                            "Unkown ROM.\nWanna Manually Insert SongTable Offset?",
+                                                            QMessageBox::Yes|QMessageBox::No);
                 if (reply == QMessageBox::Yes)
                 {
                     QString offset;
@@ -80,6 +80,7 @@ void MainWindow::on_pushButton_File_clicked()
                                    ROM_CODES[romType] + ": " +
                                    ROM_NAMES[romType]);
             }
+        }
     }
 
     if (romReady)

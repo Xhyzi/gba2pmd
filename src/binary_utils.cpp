@@ -20,7 +20,7 @@ bool CheckRomVersion()
 {
     quint32 header = ReadROMWordAt(ROM_HEADER_OFFSET);
 
-    for (int i=0; i<(int)sizeof(ROM_HEADERS); i++)
+    for (uint i=0; i < sizeof(ROM_HEADERS)/sizeof(ROM_HEADERS[0]); i++)
         if (ROM_HEADERS[i] == header)
         {
             romType = i;

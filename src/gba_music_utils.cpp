@@ -356,7 +356,7 @@ static QString ParseKeysplit(Instrument ins, quint8 mode)
 
     if (vksplit.svg < 0x8000000 || vksplit.svg > 0x9FFFFFF)
     {
-        QString msg = "Bad voiceGroup pointer \"" + IntToHexQString(vksplit.svg) + "\"";
+        QString msg = "Bad voiceGroup pointer \"" + IntToDecimalQString(vksplit.svg) + "\"";
         throw msg;
     }
 

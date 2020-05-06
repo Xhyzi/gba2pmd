@@ -754,7 +754,7 @@ static void BuildProgrammableWaveDataFile()
         {
             out << "\n\nProgrammableWaveData_" +
                    IntToHexQString(pwSample_list[i]) + "::";
-            out << "\n\t.incbin \"" + DS_SAMPLE_DIR +
+            out << "\n\t.incbin \"" + PW_SAMPLE_DIR +
                    "/" + IntToHexQString(pwSample_list[i]) +
                    PWS_EXTENSION + "\"";
         }

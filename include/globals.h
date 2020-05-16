@@ -14,6 +14,7 @@ const QString CONSTANTS_DIR = "/include/constants";
 const QString PW_SAMPLE_DIR = "sound/programmable_wave_samples";
 const QString DS_SAMPLE_DIR = "sound/direct_sound_samples";
 const QString MIDI_DIR = "sound/songs/midi";
+const QString VG_DIR = "/sound/voicegrups";
 
 const QString PWS_EXTENSION = ".pcm";
 const QString BIN_EXTENSION = ".bin";
@@ -23,7 +24,7 @@ const QString DSOUND_DATA_FILE = "/sound/direct_sound_data.inc";
 const QString SONG_MK_FILE = "/songs.mk";
 const QString LD_SCRIPT_FILE = "/ld_script.txt";
 const QString KEYSPLIT_FILE = "/sound/keysplit_tables.inc";
-const QString VOICE_GROUP_FILE = "/sound/voice_groups.inc";
+const QString VOICE_GROUP_TABLE_FILE = "/sound/voice_groups.inc";
 const QString SONG_TABLE_FILE = "/sound/song_table.inc";
 
 const QString DEFAULT_VG_ENTRY = "\tvoice_square_1 255, 255, 255, 255, 255, 255";

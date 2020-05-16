@@ -34,7 +34,8 @@ static void CreateSongMKEntry(struct Song song, struct SongHeader header);
 /** Build Files **/ //Build the different music related files
 static void BuildSongTableFile();
 static void BuildSongConstantsFile();
-static void BuildVoiceGroupsFile();
+static void BuildVoiceGroupFile(quint32 vgOffset);
+static void BuildVoiceGroupsTable();
 static void BuildKeySplitFile();
 static void BuildDirectSoundDataFile();
 static void BuildProgrammableWaveDataFile();
@@ -99,11 +100,12 @@ void ExtractROMSongData(quint16 min, quint16 max, MainWindow* mw)
     songMK_list.clear();
     ld_scripts_list.clear();
 
-    quint16 entries = max-min;
+    quint16 entries = max - min + 1;
 
     for (int i=0; i<=entries; i++)
     {
         ParseSong(min + i);
+
         mw->SetPercentage(i * 100 / entries);
     }
 
@@ -154,7 +156,9 @@ static void ParseVoiceGroup(quint32 vgOffset)
         vgIds_map.insert(vgOffset, pretvgTableSize + voiceGroups_map.size());
         voiceGroups_map.insert(vgOffset, voiceGroup_list);
         for (int i=0; i<VG_SIZE; i++)
+        {
             voiceGroups_map[vgOffset].append(ParseVGEntry(vgOffset + VG_ENTRY_LENGTH * i));
+        }
     }
 }
 
@@ -312,6 +316,7 @@ static QString ParseProgrammableWave(Instrument ins, quint8 mode)
     ProgramableWave pwave;
 
     pwave.data = (ins.data[6] << 24) + (ins.data[5] << 16) + (ins.data[4] << 8) + ins.data[3];
+
     if (pwave.data < 0x8000000 || pwave.data > 0x9FFFFFF)
     {
         QString msg = "Bad programmable Wave pointer \"" + IntToHexQString(pwave.data) + "\"";
@@ -404,7 +409,7 @@ static void ParseSplit(quint32 offset)
 
     for (int i=0; i<elements; i++)
     {
-        keySplit_list.append(IntToHexQString(splitData[i]));
+        keySplit_list.append(IntToDecimalQString(splitData[i]));
     }
 
     keySplit_map.insert(offset, keySplit_list);
@@ -586,7 +591,8 @@ void BuildSongFiles()
     CreatePaths();
     BuildSongTableFile();
     BuildSongConstantsFile();
-    BuildVoiceGroupsFile();
+
+    BuildVoiceGroupsTable();
     BuildKeySplitFile();
     BuildDirectSoundDataFile();
     BuildProgrammableWaveDataFile();
@@ -629,30 +635,59 @@ static void BuildSongConstantsFile()
     }
 }
 
-static void BuildVoiceGroupsFile()
+//VG Individual .inc file
+static void BuildVoiceGroupFile(quint32 vgOffset)
 {
     QStringList vg;
 
-    QFile f(OUTPUT_DIRECTORY + VOICE_GROUP_FILE);
+    QFile f(OUTPUT_DIRECTORY +
+            VG_DIR + "/voicegroup" +
+            IntToDecimalQString(vgIds_map[vgOffset]) +
+            ".inc");
 
     if (f.open(QIODevice::ReadWrite))
     {
         QTextStream out(&f);
-        QMapIterator<quint32, QStringList> i(voiceGroups_map);
 
-        for (int vg_id=pretvgTableSize; i.hasNext(); vg_id++)
+        vg = voiceGroups_map[vgOffset];
+
+        out << "\n\t.align 2\n";
+        out << "voicegroup" +
+                    IntToDecimalQString(vgIds_map[vgOffset]) +
+                    ":: @ " + IntToHexQString(vgOffset) + "\n";
+
+        for (int j=0; j<VG_SIZE; j++)
+            out << vg[j] + "\n";
+    }
+}
+
+//Table with all voicegroups
+static void BuildVoiceGroupsTable()
+{
+    //QStringList vg;
+
+    QMap<quint16, quint32> vgById;
+    QMapIterator<quint32, quint16> it(vgIds_map);
+
+    while (it.hasNext())
+    {
+        it.next();
+        vgById.insert(it.value(), it.key());
+    }
+
+    QFile f(OUTPUT_DIRECTORY + VOICE_GROUP_TABLE_FILE);
+
+    if (f.open(QIODevice::ReadWrite))
+    {
+        QTextStream out(&f);
+
+        for (int i=pretvgTableSize; i<pretvgTableSize+vgIds_map.size(); i++)
         {
-            i.next();
-            vg = i.value();
-
-            out << "\n\t.align 2\n";
-            out << "voicegroup" +
-                   IntToDecimalQString(vg_id) +
-                   ":: @ " + IntToHexQString(i.key()) + "\n";
-
-            for(int j=0; j<VG_SIZE; j++)
-                out << vg[j] + "\n";
+            out << "\n\t.include \"sound/voicegroups/voicegroup" +
+                   IntToDecimalQString(i) + "\"";
+            BuildVoiceGroupFile(vgById[i]);
         }
+
         out.flush();
         f.close();
     }
@@ -831,6 +866,7 @@ static void CreatePaths()
 {
     CreatePath(OUTPUT_DIRECTORY + SOUND_DIR);
     CreatePath(OUTPUT_DIRECTORY + CONSTANTS_DIR);
+    CreatePath(OUTPUT_DIRECTORY + VG_DIR);
 }
 
 //Creates a path if does not exist

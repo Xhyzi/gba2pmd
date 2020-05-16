@@ -46,7 +46,7 @@ static bool InitPretVoiceGroupTableLength()
 {
     quint16 vgNumber = 0;
     QString line;
-    QFile f(pretPath + VOICE_GROUP_FILE);
+    QFile f(pretPath + VOICE_GROUP_TABLE_FILE);
 
     if (f.open(QIODevice::ReadOnly))
     {

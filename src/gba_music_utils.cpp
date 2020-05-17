@@ -58,7 +58,7 @@ static QMap<quint32, QStringList> keySplit_map;    //sound/keysplit_tables.inc
 static QList<quint32> sample_list;                 //sound/direct_sound_samples/XXX.aif
 static QList<quint32> pwSample_list;               //sound/programmable_wave_samples/XXX.pcm
 static QMap<quint32, quint16> vgIds_map;       //Contains id's of each map
-static QMap<quint32, quint16> ksplitIds_map;
+static QMap<quint16, quint32> ksplitIds_map;
 static QStringList songMK_list;                //songs.mk
 static QStringList ld_scripts_list;    //@song_data ld_script.txt
 
@@ -100,13 +100,13 @@ void ExtractROMSongData(quint16 min, quint16 max, MainWindow* mw)
     songMK_list.clear();
     ld_scripts_list.clear();
 
-    quint16 entries = max - min + 1;
+    quint16 entries = max - min;
 
     for (int i=0; i<=entries; i++)
     {
         ParseSong(min + i);
 
-        mw->SetPercentage(i * 100 / entries);
+        mw->SetPercentage(i * 100 / (entries + 1));
     }
 
     BuildSongFiles();
@@ -373,7 +373,7 @@ static QString ParseKeysplit(Instrument ins, quint8 mode)
         if (!keySplit_map.contains(vksplit.keysplit))
         {
             ParseSplit(vksplit.keysplit);
-            ksplitIds_map.insert(vksplit.keysplit, pretKsTableSize + keySplit_map.size());
+            ksplitIds_map.insert(pretKsTableSize + keySplit_map.size(), vksplit.keysplit);
         }
     }
 
@@ -402,9 +402,10 @@ static void ParseSplit(quint32 offset)
 
     //Reads the split
     quint8 splitData[elements];
+
     for (int j=0; j<elements; j++)
     {
-        splitData[j] = ReadROMByteAt(offset + backwardsOffset + j);
+        splitData[j] = ReadROMByteAt(offset + j);
     }
 
     for (int i=0; i<elements; i++)
@@ -701,19 +702,22 @@ static void BuildKeySplitFile()
     if(f.open(QIODevice::ReadWrite))
     {
         QTextStream out(&f);
-        QMapIterator<quint32, QStringList> i(keySplit_map);
+        QMapIterator<quint16, quint32> it(ksplitIds_map);
 
-        for (int ks_id = pretKsTableSize + 1; i.hasNext(); ks_id++)
+
+        while (it.hasNext())
         {
-            i.next();
-            ks = i.value();
+            it.next();
+            ks = keySplit_map[it.value()];
 
             out << "\n\n.set KeySplitTable" +
-                   IntToDecimalQString(ks_id) + ", . - " +
-                   IntToDecimalQString(KEYSPLIT_MAX_ELEMENTS - ks.size());
+                   IntToDecimalQString(it.key()) + ", . - " +
+                   IntToDecimalQString(0);  //KEYSPLIT_MAX_ELEMENTS - ks.size()
 
-            for (int j=0; j<ks.size(); j++)
-                out << "\n\t.byte " + ks[j];
+            for (int i=0; i<ks.size(); i++)
+            {
+                out << "\n\t.byte " + ks[i];
+            }
         }
         out.flush();
         f.close();
@@ -909,13 +913,13 @@ static void RenameKeysplitPointers()
     quint32 offset;
     quint16 id;
 
-    QMapIterator<quint32, quint16> i(ksplitIds_map);
+    QMapIterator<quint16, quint32> i(ksplitIds_map);
 
     while(i.hasNext())
     {
         i.next();
-        offset = i.key();
-        id = i.value();
+        offset = i.value();
+        id = i.key();
 
         QMapIterator<quint32, QStringList> i_vg(voiceGroups_map);
 

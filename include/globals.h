@@ -108,7 +108,7 @@ struct VoiceKeysplit {
 #define VOICE_KEYSPLIT      0x40
 #define VOICE_KEYSPLIT_ALL  0x80
 
-#define KEYSPLIT_MAX_ELEMENTS 108
+#define KEYSPLIT_MAX_ELEMENTS 0x80
 
 extern QFile romFile;
 extern QByteArray romHex;

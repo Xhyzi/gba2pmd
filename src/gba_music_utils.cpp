@@ -106,7 +106,7 @@ void ExtractROMSongData(quint16 min, quint16 max, MainWindow* mw)
     {
         ParseSong(min + i);
 
-        mw->SetPercentage(i * 100 / (entries + 1));
+        mw->SetPercentage((i+1) * 100 / (entries + 1));
     }
 
     BuildSongFiles();
@@ -263,15 +263,6 @@ static QString ParseDirectSound(Instrument ins, quint8 mode)
     dsound.dec = ins.data[8];
     dsound.sus = ins.data[9];
     dsound.rel = ins.data[10];
-
-    if ((ReadROMHWordAt(dsound.sample) != 0)
-            || (ReadROMHWordAt(dsound.sample + 0xE) != 0)
-            || (ReadROMWordAt(dsound.sample + 0xA) & 0xFFFFFF00) == 0
-            || (ReadROMWordAt(dsound.sample + 0x3) & 0xFFFFFF00) == 0)
-    {
-        QString msg = "Bad sample file \"" + IntToHexQString(dsound.sample) + "\"";
-        throw msg;
-    }
 
     if (!sample_list.contains(dsound.sample))
     {

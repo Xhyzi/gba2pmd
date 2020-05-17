@@ -684,8 +684,8 @@ static void BuildVoiceGroupsTable()
 
         for (int i=pretvgTableSize; i<pretvgTableSize+vgIds_map.size(); i++)
         {
-            out << "\n\t.include \"sound/voicegroups/voicegroup" +
-                   IntToDecimalQString(i) + "\"";
+            out << "\n.include \"sound/voicegroups/voicegroup" +
+                   IntToDecimalQString(i) + ".inc\"";
             BuildVoiceGroupFile(vgById[i]);
         }
 
